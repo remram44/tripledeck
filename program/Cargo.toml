@@ -1,11 +1,19 @@
 [package]
-name = "program"
+name = "tripledeck_program"
 version = "0.1.0"
 authors = ["Remi Rampin <remirampin@gmail.com>"]
+description = "Native tripledeck program"
+homepage = "https://gitlab.com/remram44/tripledeck"
+repository = "https://gitlab.com/remram44/tripledeck"
+license = "MIT/Apache-2.0"
 edition = "2018"
 
-[dependencies]
-core = "../core"
+[[bin]]
+name = "tripledeck"
+path = "src/main.rs"
+
+[dependencies.tripledeck_core]
+path = "../core"
 
 [features]
 default = ["server"]
