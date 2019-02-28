@@ -1,16 +1,18 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
-  entry: "./index.js",
+  entry: {
+    client: "./client.js"
+  },
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "index.js",
+    filename: "[name].js",
   },
   plugins: [
-    new HtmlWebpackPlugin({
-      title: "Getting started with WASM"
-    })
+    new CopyPlugin([
+      {from: 'index.html', to: 'index.html'}
+    ])
   ],
   mode: "development"
 };
