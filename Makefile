@@ -10,7 +10,7 @@ program/target/debug/tripledeck:
 wasm: webapp/dist/tripledeck_wasm.js
 
 webapp/dist/tripledeck_wasm.js: wasm/target/wasm32-unknown-unknown/debug/tripledeck_wasm.wasm
-	mkdir webapp/dist
+	mkdir -p webapp/dist
 	cd wasm && wasm-bindgen target/wasm32-unknown-unknown/debug/tripledeck_wasm.wasm --out-dir ../webapp/dist/
 
 wasm/target/wasm32-unknown-unknown/debug/tripledeck_wasm.wasm:
