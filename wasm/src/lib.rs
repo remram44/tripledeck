@@ -11,12 +11,6 @@ use tripledeck_core::{Board, List, Storage};
 #[wasm_bindgen]
 pub struct BoardWrap(tripledeck_core::Board);
 
-impl wasm_bindgen::convert::OptionIntoWasmAbi for BoardWrap {
-    fn none() -> Self::Abi {
-        0
-    }
-}
-
 fn uuid2str(id: &Uuid) -> String {
     format!("{:x}", id.to_hyphenated_ref())
 }

@@ -15,5 +15,8 @@ crate-type = ["cdylib", "rlib"]
 uuid = "0.7"
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 
-[dependencies.tripledeck_core]
-path = "../core"
+tripledeck_core = { path = "../core" }
+
+[patch.crates-io]
+# Necessary until 0.2.38 gets released with #1275
+"wasm-bindgen" = { git = "https://github.com/rustwasm/wasm-bindgen.git" }
