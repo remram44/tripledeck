@@ -4,6 +4,7 @@ stages:
 
 variables:
   DOCKER_DRIVER: overlay2
+  CARGO_HOME: $CI_PROJECT_DIR/cargo
 
 run_tests:
   stage: test
@@ -11,6 +12,12 @@ run_tests:
   script:
     - set -e
     - make test
+  cache:
+    paths:
+      - cargo/
+      - core/target/
+      - program/target/
+      - webapp/target/
 
 pages:
   stage: deploy
@@ -29,6 +36,11 @@ pages:
     - make wasm
     - (cd webapp && ./docker.sh install && ./docker.sh build)
     - mkdir public && cp webapp/dist/* public/
+  cache:
+    paths:
+      - cargo/
+      - webapp/target/
+      - webapp/node_modules/
   artifacts:
     paths:
       - public
