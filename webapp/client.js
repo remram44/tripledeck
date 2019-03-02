@@ -24,49 +24,55 @@ request.onupgradeneeded = function(event) {
 
     var boards = db.createObjectStore("boards", {keyPath: "id"});
     boards.createIndex("name", "name", {unique: false});
-    boards.transaction.oncomplete = function(event) {
-        var tran = db.transaction("boards", "readwrite").objectStore("boards");
-        tran.add({id: "936DA01F9ABD4d9d80C70000BBBB0000", name: "board"});
-    };
 
     var lists = db.createObjectStore("lists", {keyPath: "id"});
     lists.createIndex("board", "board", {unique: false});
-    lists.transaction.oncomplete = function(event) {
-        var tran = db.transaction("lists", "readwrite").objectStore("lists");
-        tran.add({id: "936DA01F9ABD4d9d80C7000011110001", name: "todo",
-                  board: "936DA01F9ABD4d9d80C70000BBBB0000"});
-        tran.add({id: "936DA01F9ABD4d9d80C7000011110002", name: "doing",
-                  board: "936DA01F9ABD4d9d80C70000BBBB0000"});
-        tran.add({id: "936DA01F9ABD4d9d80C7000011110003", name: "done",
-                  board: "936DA01F9ABD4d9d80C70000BBBB0000"});
-    };
 
     var cards = db.createObjectStore("cards", {keyPath: "id"});
     cards.createIndex("board", "board", {unique: false});
     cards.createIndex("list", "list", {unique: false});
-    cards.transaction.oncomplete = function(event) {
-        var tran = db.transaction("cards", "readwrite").objectStore("cards");
-        tran.add({id: "936DA01F9ABD4d9d80C70000CCCC0001", title: "design",
-                  board: "936DA01F9ABD4d9d80C70000BBBB0000",
-                  list: "936DA01F9ABD4d9d80C7000011110003"});
-        tran.add({id: "936DA01F9ABD4d9d80C70000CCCC0002", title: "implement",
-                  board: "936DA01F9ABD4d9d80C70000BBBB0000",
-                  list: "936DA01F9ABD4d9d80C7000011110002"});
-        tran.add({id: "936DA01F9ABD4d9d80C70000CCCC0003", title: "test",
-                  board: "936DA01F9ABD4d9d80C70000BBBB0000",
-                  list: "936DA01F9ABD4d9d80C7000011110001"});
-        tran.add({id: "936DA01F9ABD4d9d80C70000CCCC0004", title: "document",
-                  board: "936DA01F9ABD4d9d80C70000BBBB0000",
-                  list: "936DA01F9ABD4d9d80C7000011110001"});
+
+    cards.transaction.oncomplete = function() {
+        var tran = db.transaction(["boards", "lists", "cards"],
+                                  "readwrite");
+
+        var boards = tran.objectStore("boards");
+        boards.add({id: "936DA01F9ABD4D9D80C70000BBBB0000", name: "board"});
+
+        var lists = tran.objectStore("lists");
+        lists.add({id: "936DA01F9ABD4D9D80C7000011110001", name: "todo",
+                  board: "936DA01F9ABD4D9D80C70000BBBB0000"});
+        lists.add({id: "936DA01F9ABD4D9D80C7000011110002", name: "doing",
+                  board: "936DA01F9ABD4D9D80C70000BBBB0000"});
+        lists.add({id: "936DA01F9ABD4D9D80C7000011110003", name: "done",
+                  board: "936DA01F9ABD4D9D80C70000BBBB0000"});
+
+        var cards = tran.objectStore("cards");
+        cards.add({id: "936DA01F9ABD4D9D80C70000CCCC0001", title: "design",
+                   board: "936DA01F9ABD4D9D80C70000BBBB0000",
+                   list: "936DA01F9ABD4D9D80C7000011110003"});
+        cards.add({id: "936DA01F9ABD4D9D80C70000CCCC0002", title: "implement",
+                   board: "936DA01F9ABD4D9D80C70000BBBB0000",
+                  list: "936DA01F9ABD4D9D80C7000011110002"});
+        cards.add({id: "936DA01F9ABD4D9D80C70000CCCC0003", title: "test",
+                   board: "936DA01F9ABD4D9D80C70000BBBB0000",
+                   list: "936DA01F9ABD4D9D80C7000011110001"});
+        cards.add({id: "936DA01F9ABD4D9D80C70000CCCC0004", title: "document",
+                   board: "936DA01F9ABD4D9D80C70000BBBB0000",
+                   list: "936DA01F9ABD4D9D80C7000011110001"});
+
+        console.log("Database upgrade complete");
     };
 };
 
 request.onsuccess = function(event) {
     console.log("Database opened");
     db = event.target.result;
+    window.tripledeck_db = db;
 };
 
 window.storage_get_board = function(id) {
+    console.log("Storage: get_board(", id, ")");
     return new Promise(function(resolve, reject) {
         var tran = db.transaction(["boards", "lists"]);
 
@@ -75,7 +81,7 @@ window.storage_get_board = function(id) {
         req_b.onerror = function(event) { reject(event.target.errorCode); };
         req_b.onsuccess = function() {
             var board = req_b.result;
-            console.log("got board:", board);
+            console.log("Storage: got board:", board);
             if(board == undefined) {
                 resolve(null);
                 return;
@@ -146,7 +152,8 @@ window.storage_add_list = function(board_id, list) {
 const client = import("./dist/tripledeck_wasm");
 
 client.then(client => {
-    client.test("World!");
-    var b = client.get_board("936DA01F9ABD4d9d80C70000BBBB0000");
-    console.log("board = ", b);
+    client.get_board("936DA01F9ABD4d9d80C70000BBBB0000")
+    .then(function(b) {
+        console.log("board = ", b);
+    });
 });
