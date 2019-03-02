@@ -1,4 +1,4 @@
-.PHONY: all program wasm
+.PHONY: all program wasm docker-serve
 
 all: program wasm
 
@@ -15,3 +15,6 @@ webapp/dist/tripledeck_wasm.js: webapp/target/wasm32-unknown-unknown/debug/tripl
 
 webapp/target/wasm32-unknown-unknown/debug/tripledeck_wasm.wasm: webapp/Cargo.toml $(wildcard webapp/src/*.rs)
 	cd webapp && cargo build --target wasm32-unknown-unknown
+
+docker-serve: wasm
+	cd webapp && ./docker.sh serve
