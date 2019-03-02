@@ -11,6 +11,12 @@ use tripledeck_core::{Board, List, Storage};
 #[wasm_bindgen]
 pub struct BoardWrap(tripledeck_core::Board);
 
+impl wasm_bindgen::convert::OptionIntoWasmAbi for BoardWrap {
+    fn none() -> Self::Abi {
+        0
+    }
+}
+
 fn uuid2str(id: &Uuid) -> String {
     format!("{:x}", id.to_hyphenated_ref())
 }
@@ -43,10 +49,15 @@ impl Storage for JsStorage {
         );
     }
 
-    fn get_board(&mut self, id: &Uuid) -> Board {
-        storage_get_board(
+    fn get_board(&mut self, id: &Uuid) -> Option<Board> {
+        let value = storage_get_board(
             &uuid2str(id),
-        ).into_serde().unwrap()
+        );
+        if value == JsValue::NULL {
+            None
+        } else {
+            value.into_serde().unwrap()
+        }
     }
 
     fn add_list(&mut self, board_id: &Uuid, list: &List) {
@@ -58,6 +69,7 @@ impl Storage for JsStorage {
 }
 
 #[wasm_bindgen]
-pub fn get_board(id: &str) -> BoardWrap {
-    BoardWrap(Board::get(&mut JsStorage, &Uuid::parse_str(id).expect("Invalid board ID")))
+pub fn get_board(id: &str) -> Option<BoardWrap> {
+    let id = Uuid::parse_str(id).expect("Invalid board ID");
+    Board::get(&mut JsStorage, &id).map(|b| BoardWrap(b))
 }

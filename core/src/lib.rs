@@ -19,7 +19,7 @@ pub struct Board {
 
 pub trait Storage {
     fn add_board(&mut self, board: &Board);
-    fn get_board(&mut self, id: &Uuid) -> Board;
+    fn get_board(&mut self, id: &Uuid) -> Option<Board>;
     fn add_list(&mut self, board_id: &Uuid, list: &List);
 }
 
@@ -34,7 +34,7 @@ impl Board {
         board
     }
 
-    pub fn get<S: Storage>(storage: &mut S, id: &Uuid) -> Board {
+    pub fn get<S: Storage>(storage: &mut S, id: &Uuid) -> Option<Board> {
         storage.get_board(id)
     }
 
