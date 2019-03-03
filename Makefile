@@ -1,4 +1,4 @@
-.PHONY: all program wasm docker-serve
+.PHONY: all program wasm webapp serve
 
 all: program wasm
 
@@ -21,5 +21,16 @@ test:
 	cd program && cargo test
 	cd webapp && cargo test
 
-docker-serve: wasm
+webapp: wasm
+ifdef docker
+	cd webapp && ./docker.sh build
+else
+	cd webapp && node_modules/webpack/bin/webpack.js
+endif
+
+serve: wasm
+ifdef docker
 	cd webapp && ./docker.sh serve
+else
+	cd webapp && npm run serve
+endif
