@@ -16,5 +16,10 @@ webapp/dist/tripledeck_wasm.js: webapp/target/wasm32-unknown-unknown/debug/tripl
 webapp/target/wasm32-unknown-unknown/debug/tripledeck_wasm.wasm: webapp/Cargo.toml $(wildcard webapp/src/*.rs)
 	cd webapp && cargo build --target wasm32-unknown-unknown
 
+test:
+	cd core && cargo test
+	cd program && cargo test
+	cd webapp && cargo test
+
 docker-serve: wasm
 	cd webapp && ./docker.sh serve
