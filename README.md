@@ -30,3 +30,14 @@ Repository organization
 * [core](core/): Core functionality, used by the client, server, and webapp
 * [program](program/): Native program, optionally with socket server. Uses core, SQL backend.
 * [webapp](webapp/): Progressive web app. Uses core as webassembly, IndexedDB backend.
+
+How To
+------
+
+The easiest is to use the `Makefile`.
+
+* `make test` will run all tests
+* `make program` will build the native binary (or run `cargo build` in `program/`)
+* `make webapp` will build the webapp (use `make webapp docker=1` to use the `node` Docker image to build instead of installing Node and NPM)
+  * You will have to run `npm install` (or `./docker.sh install`) in `webapp/` first
+* `make serve` (or `make serve docker=1`) will serve the app at `localhost:8080` using webpack's auto-reloading web server. Note that you will need to run it again if you make changes to Rust code
