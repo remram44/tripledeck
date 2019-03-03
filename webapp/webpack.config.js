@@ -11,7 +11,8 @@ module.exports = {
   },
   plugins: [
     new CopyPlugin([
-      {from: 'index.html', to: 'index.html'}
+      {from: 'index.html', to: 'index.html'},
+      {from: 'client.css', to: 'client.css'}
     ])
   ],
   mode: "development"
