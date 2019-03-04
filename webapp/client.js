@@ -2,7 +2,7 @@ import database from "./database.js"
 
 const client = import("./dist/tripledeck_wasm");
 
-const BOARD_ID = "936DA01F9ABD4d9d80C70000BBBB0000";
+const BOARD_ID = "936DA01F9ABD4D9D80C70000BBBB0000";
 
 client.then(client => {
     client.get_board(BOARD_ID)
