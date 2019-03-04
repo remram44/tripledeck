@@ -76,40 +76,25 @@ window.storage_get_board = function(id) {
     return new Promise(function(resolve, reject) {
         var tran = db.transaction(["boards", "lists"]);
 
-        // Query for the board
-        var req_b = tran.objectStore("boards").get(id);
-        req_b.onerror = function(event) { reject(event.target.errorCode); };
-        req_b.onsuccess = function() {
-            var board = req_b.result;
+        var req = tran.objectStore("boards").get(id);
+        req.onerror = function(event) { reject(event.target.errorCode); };
+        req.onsuccess = function() {
+            var board = req.result;
             console.log("Storage: got board:", board);
             if(board == undefined) {
                 resolve(null);
-                return;
+            } else {
+                resolve({
+                    id: id,
+                    name: board.name
+                });
             }
-
-            // Query for the lists
-            var lists = [];
-            var req_l = tran.objectStore("lists").index("board").openCursor(IDBKeyRange.only(id));
-            req_l.onerror = function(event) { reject(event.target.errorCode); };
-            req_l.onsuccess = function(event) {
-                var cursor = event.target.result;
-                if(cursor) {
-                    lists.push(cursor.value);
-                } else {
-                    // Return result
-                    console.log("got lists:", lists);
-                    resolve({
-                        id: id,
-                        name: board.name,
-                        lists: lists
-                    });
-                }
-            };
         };
     });
 };
 
 window.storage_add_board = function(board) {
+    console.log("Storage: add_board(", board.id, ")");
     return new Promise(function(resolve, reject) {
         var tran = db.transaction(["boards", "lists"], "readwrite");
         tran.onerror = function(event) { reject(tran.error); };
@@ -135,7 +120,28 @@ window.storage_add_board = function(board) {
     });
 };
 
+window.storage_get_lists = function(board_id) {
+    console.log("Storage: get_lists(", board_id, ")");
+    return new Promise(function(resolve, reject) {
+        var lists = [];
+        var tran = db.transaction(["lists"]);
+        var req = tran.objectStore("lists").index("board").openCursor(IDBKeyRange.only(board_id));
+        req.onerror = function(event) { console.log("no");reject(event.target.errorCode); };
+        req.onsuccess = function(event) {
+            var cursor = event.target.result;
+            if(cursor) {
+                lists.push(cursor.value);
+                cursor.continue();
+            } else {
+                console.log("Storage: got lists:", lists);
+                resolve(lists);
+            }
+        };
+    });
+}
+
 window.storage_add_list = function(board_id, list) {
+    console.log("Storage: add_list(", board_id, ", ", list.id, ")");
     return new Promise(function(resolve, reject) {
         var tran = db.transaction(["lists"], "readwrite");
         tran.onerror = function(event) { reject(tran.error); };

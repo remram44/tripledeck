@@ -31,6 +31,7 @@ thread_local! {
 extern {
     pub fn storage_add_board(board: &JsValue) -> js_sys::Promise;
     pub fn storage_get_board(id: &str) -> js_sys::Promise;
+    pub fn storage_get_lists(board_id: &str) -> js_sys::Promise;
     pub fn storage_add_list(board_id: &str, list: &JsValue) -> js_sys::Promise;
 }
 
@@ -59,6 +60,16 @@ impl Storage for JsStorage {
             } else {
                 value.into_serde().unwrap()
             }
+        }))
+    }
+
+    fn get_lists(&self, board_id: &Uuid)
+        -> Box<Future<Item=Vec<List>, Error=Self::Error>>
+    {
+        Box::new(JsFuture::from(storage_get_lists(
+            &uuid2str(board_id)
+        )).map(|array| {
+            array.into_serde().unwrap()
         }))
     }
 

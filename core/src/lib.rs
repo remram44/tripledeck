@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde;
 extern crate uuid;
 
-use futures::Future;
+use futures::{Future, future};
 use serde::{Serialize, Deserialize};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -34,6 +34,8 @@ pub trait Storage {
         -> Box<Future<Item=(), Error=Self::Error>>;
     fn get_board(&self, id: &Uuid)
         -> Box<Future<Item=Option<Board>, Error=Self::Error>>;
+    fn get_lists(&self, board_id: &Uuid)
+        -> Box<Future<Item=Vec<List>, Error=Self::Error>>;
     fn add_list(&self, board_id: &Uuid, list: &List)
         -> Box<Future<Item=(), Error=Self::Error>>;
 }
@@ -112,7 +114,7 @@ impl<S: Storage> App<S> {
         let opt = self.boards.borrow().get(id).cloned();
         if let Some(weak) = opt {
             if let Some(rc) = weak.upgrade() {
-                return Box::new(futures::future::ok(Some(rc)));
+                return Box::new(future::ok(Some(rc)));
             }
         }
 
@@ -120,16 +122,22 @@ impl<S: Storage> App<S> {
         let fut = self.storage.get_board(id);
         // Wrap it
         let storage = self.storage.clone();
-        let fut = fut.map(|opt| opt.map(|b| {
-            let board = BoardHandle {
-                storage: storage,
-                inner: Rc::new(RefCell::new(b)),
-                lists: Rc::new(RefCell::new(Vec::new())),
-            };
-            Rc::new(board)
-        }));
-        // Add it to the cache
         let id = id.clone();
+        let fut = fut.and_then(move |opt| {
+            if let Some(b) = opt {
+                let fut = storage.get_lists(&id).map(|lists|
+                    Some(Rc::new(BoardHandle {
+                        storage: storage,
+                        inner: Rc::new(RefCell::new(b)),
+                        lists: Rc::new(RefCell::new(lists)),
+                    }))
+                );
+                future::Either::A(fut)
+            } else {
+                future::Either::B(future::ok(None))
+            }
+        });
+        // Add it to the cache
         let boards_map = self.boards.clone();
         let fut = fut.map(move |opt| {
             if let Some(ref rc) = opt {
