@@ -9,19 +9,19 @@ use std::collections::BTreeMap;
 use std::rc::{Rc, Weak};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Card {
     pub id: Uuid,
     pub title: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct List {
     pub id: Uuid,
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
     pub id: Uuid,
     pub name: String,
