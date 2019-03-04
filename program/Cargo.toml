@@ -12,8 +12,12 @@ edition = "2018"
 name = "tripledeck"
 path = "src/main.rs"
 
-[dependencies.tripledeck_core]
-path = "../core"
+[dependencies]
+futures = "0.1"
+rusqlite = "0.16"
+uuid = "0.7"
+
+tripledeck_core = { path = "../core" }
 
 [features]
 default = ["server"]

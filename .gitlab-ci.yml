@@ -11,6 +11,8 @@ run_tests:
   image: remram/rust
   script:
     - set -e
+    - apt-get update
+    - apt-get install -y libsqlite3-dev
     - make test
   cache:
     paths:
