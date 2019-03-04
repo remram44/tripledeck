@@ -10,6 +10,12 @@ use std::rc::{Rc, Weak};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
+pub struct Card {
+    pub id: Uuid,
+    pub title: String,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct List {
     pub id: Uuid,
     pub name: String,
@@ -19,7 +25,6 @@ pub struct List {
 pub struct Board {
     pub id: Uuid,
     pub name: String,
-    pub lists: Vec<List>,
 }
 
 pub trait Storage {
@@ -33,55 +38,75 @@ pub trait Storage {
         -> Box<Future<Item=(), Error=Self::Error>>;
 }
 
-impl Board {
-    pub fn add_list<S: Storage>(&mut self, storage: &mut S, name: &str)
+pub struct BoardHandle<S: Storage> {
+    storage: Rc<S>,
+    inner: Rc<RefCell<Board>>,
+    lists: Rc<RefCell<Vec<List>>>,
+}
+
+impl<S: Storage> BoardHandle<S> {
+    pub fn board<'a>(&'a self) -> std::cell::Ref<'a, Board> {
+        self.inner.borrow()
+    }
+
+    pub fn lists<'a>(&'a self) -> std::cell::Ref<'a, Vec<List>> {
+        self.lists.borrow()
+    }
+
+    pub fn add_list(&self, name: &str)
         -> Box<Future<Item=(), Error=S::Error>>
     {
         let list = List {
             id: Uuid::new_v4(),
             name: name.into(),
         };
-        storage.add_list(&self.id, &list)
+        self.storage.add_list(&self.board().id, &list)
     }
 }
 
-pub struct App<S: Storage> {
-    storage: S,
-    boards: Rc<RefCell<BTreeMap<Uuid, Weak<Board>>>>,
+pub struct App<S: Storage + 'static> {
+    storage: Rc<S>,
+    boards: Rc<RefCell<BTreeMap<Uuid, Weak<BoardHandle<S>>>>>,
 }
 
 impl<S: Storage> App<S> {
     pub fn new(storage: S) -> App<S> {
         App {
-            storage,
+            storage: Rc::new(storage),
             boards: Rc::new(RefCell::new(BTreeMap::new())),
         }
     }
 
     pub fn new_board(&self, name: &str)
-        -> Box<Future<Item=Rc<Board>, Error=S::Error>>
+        -> Box<Future<Item=Rc<BoardHandle<S>>, Error=S::Error>>
     {
         // Make it
         let id = Uuid::new_v4();
-        let board = Board {
+        let inner = Board {
             id: id.clone(),
             name: name.into(),
-            lists: Vec::new(),
+        };
+
+        // Add it to storage
+        let fut = self.storage.add_board(&inner);
+
+        // Wrap it
+        let board = BoardHandle {
+            storage: self.storage.clone(),
+            inner: Rc::new(RefCell::new(inner)),
+            lists: Rc::new(RefCell::new(Vec::new())),
         };
         let rc = Rc::new(board);
 
         // Add it to the cache
         self.boards.borrow_mut().insert(id, Rc::downgrade(&rc));
 
-        // Add it to storage
-        let fut = self.storage.add_board(&*rc);
-
-        let fut = fut.map(|()| rc);
+        let fut = fut.map(move |()| rc);
         Box::new(fut)
     }
 
     pub fn get_board(&self, id: &Uuid)
-        -> Box<Future<Item=Option<Rc<Board>>, Error=S::Error>>
+        -> Box<Future<Item=Option<Rc<BoardHandle<S>>>, Error=S::Error>>
     {
         // Get from cache
         let opt = self.boards.borrow().get(id).cloned();
@@ -93,8 +118,16 @@ impl<S: Storage> App<S> {
 
         // Get it from storage
         let fut = self.storage.get_board(id);
-        // Turn into Rc
-        let fut = fut.map(|opt| opt.map(|b| Rc::new(b)));
+        // Wrap it
+        let storage = self.storage.clone();
+        let fut = fut.map(|opt| opt.map(|b| {
+            let board = BoardHandle {
+                storage: storage,
+                inner: Rc::new(RefCell::new(b)),
+                lists: Rc::new(RefCell::new(Vec::new())),
+            };
+            Rc::new(board)
+        }));
         // Add it to the cache
         let id = id.clone();
         let boards_map = self.boards.clone();
@@ -107,6 +140,20 @@ impl<S: Storage> App<S> {
             }
             opt
         });
+        Box::new(fut)
+    }
+
+    pub fn add_list(&self, board: Rc<Board>, name: &str)
+        -> Box<Future<Item=(), Error=S::Error>>
+    {
+        let list = List {
+            id: Uuid::new_v4(),
+            name: name.into(),
+        };
+        let fut = self.storage.add_list(
+            &board.id,
+            &list,
+        );
         Box::new(fut)
     }
 }
