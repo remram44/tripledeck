@@ -7,18 +7,23 @@ extern crate wasm_bindgen_futures;
 extern crate tripledeck_core;
 
 use futures::Future;
+use std::rc::Rc;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{JsFuture, future_to_promise};
 
-use tripledeck_core::{Board, List, Storage};
+use tripledeck_core::{List, Board, BoardHandle, Storage};
 
 #[wasm_bindgen]
-pub struct BoardWrap(tripledeck_core::Board);
+pub struct BoardWrap(Rc<tripledeck_core::BoardHandle<JsStorage>>);
 
 fn uuid2str(id: &Uuid) -> String {
-    //format!("{:x}", id.to_hyphenated_ref())
     format!("{:X}", id.to_simple_ref())
+}
+
+thread_local! {
+    static APP: tripledeck_core::App<JsStorage> =
+        tripledeck_core::App::new(JsStorage);
 }
 
 // Storage functions provided by JavaScript
@@ -35,7 +40,7 @@ struct JsStorage;
 impl Storage for JsStorage {
     type Error = JsValue;
 
-    fn add_board(&mut self, board: &Board)
+    fn add_board(&self, board: &Board)
         -> Box<Future<Item=(), Error=Self::Error>>
     {
         Box::new(JsFuture::from(storage_add_board(
@@ -43,7 +48,7 @@ impl Storage for JsStorage {
         )).map(|_| ()))
     }
 
-    fn get_board(&mut self, id: &Uuid)
+    fn get_board(&self, id: &Uuid)
         -> Box<Future<Item=Option<Board>, Error=Self::Error>>
     {
         Box::new(JsFuture::from(storage_get_board(
@@ -57,7 +62,7 @@ impl Storage for JsStorage {
         }))
     }
 
-    fn add_list(&mut self, board_id: &Uuid, list: &List)
+    fn add_list(&self, board_id: &Uuid, list: &List)
         -> Box<Future<Item=(), Error=Self::Error>>
     {
         Box::new(JsFuture::from(storage_add_list(
@@ -72,10 +77,10 @@ pub fn get_board(id: &str) -> js_sys::Promise {
     // Convert str to Uuid
     let id = Uuid::parse_str(id).expect("Invalid board ID");
     // Get board from storage
-    let fut = Board::get(&mut JsStorage, &id)
+    let fut = APP.with(|app_| app_.get_board(&id))
     // Convert Board to BoardWrap
         .map(
-        |option: Option<Board>| option.map(
+        |option: Option<Rc<BoardHandle<JsStorage>>>| option.map(
             |b| BoardWrap(b)
         )
         )
