@@ -145,6 +145,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                 self.iter.next().unwrap();
                 while let Some((end, c)) = self.iter.next() {
                     if c == '"' {
+                        println!("tokenizer: Word({})", &self.text[start + 1..end]);
                         return Some(Ok(TokenItem {
                             pos: start,
                             token: Token::Word(&self.text[start + 1..end]),
@@ -177,6 +178,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                     Token::Word(word)
                 }
             };
+            println!("tokenizer: {:?}", token);
             return Some(Ok(TokenItem {
                 pos: start,
                 token,
@@ -208,6 +210,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse(&mut self, mut precedence: i8) -> Result<Box<Expression>> {
+        println!("parse(precedence={})", precedence);
         let &TokenItem { ref token, pos } = match self.tokens.peek() {
             None => return Err(Error {
                 pos: None,
@@ -241,6 +244,7 @@ impl<'a> Parser<'a> {
                 self.parse_pred()?
             }
         };
+        println!("lhs = {:?}", expr);
 
         // Read operators
         loop {
@@ -426,6 +430,7 @@ mod tests {
         }).collect::<HashMap<String, Uuid>>();
 
         let string = "(list:todo OR list:doing) word1 (word2 word3 OR word4)";
+        println!("{}", string);
         parse(string, &map).expect("Parsing failed");
 
         if let Err(Error { pos, what }) = parse("", &map) {
