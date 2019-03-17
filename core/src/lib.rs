@@ -2,6 +2,8 @@ extern crate futures;
 extern crate serde;
 extern crate uuid;
 
+pub mod filter;
+
 use futures::{Future, future};
 use serde::{Serialize, Deserialize};
 use std::cell::RefCell;
@@ -13,6 +15,7 @@ use uuid::Uuid;
 pub struct Card {
     pub id: Uuid,
     pub title: String,
+    pub list: Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
